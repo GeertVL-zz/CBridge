@@ -17,15 +17,17 @@ namespace CBridge
       public string OutputFile { get; set; }
       public string InvokerClassName { get; set; }
       public string CDllName { get; set; }
+      public string NamespaceName { get; set; }
     }
 
     static void Main(string[] args)
     {
       var p = new FluentCommandLineParser<ApplicationArguments>();
-      p.Setup(arg => arg.InputHeader).As("i").Required().WithDescription("Please fill in a headerfile to bridge");
-      p.Setup(arg => arg.OutputFile).As("o").Required().WithDescription("Please fill in an output file.");
+      p.Setup(arg => arg.InputHeader).As('i').Required().WithDescription("Please fill in a headerfile to bridge");
+      p.Setup(arg => arg.OutputFile).As('o').Required().WithDescription("Please fill in an output file.");
       p.Setup(arg => arg.CDllName).As('d', "cdllname").WithDescription("Please fill in the dll name to invoke too.");
-      p.Setup(arg => arg.InvokerClassName).As("c").Required().WithDescription("Please fill in the classname of the invoker.");
+      p.Setup(arg => arg.InvokerClassName).As('c').Required().WithDescription("Please fill in the classname of the invoker.");
+      p.Setup(arg => arg.NamespaceName).As('n').Required().WithDescription("Please fill in the last part of the namespace");
 
       var result = p.Parse(args);
 
@@ -45,7 +47,7 @@ namespace CBridge
           ClangInvoker.visitChildren(ClangInvoker.getTranslationUnitCursor(translationUnit), functionVisitor.Visit, new CXClientData(IntPtr.Zero));
 
           var roslynTranslator = new TreeTranslator(p.Object.OutputFile);
-          roslynTranslator.Invoke(tree, p.Object.InvokerClassName, p.Object.CDllName);
+          roslynTranslator.Invoke(tree, p.Object.InvokerClassName, p.Object.CDllName, p.Object.NamespaceName);
 
         }
 
