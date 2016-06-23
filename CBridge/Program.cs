@@ -4,8 +4,6 @@ using System.Linq;
 using CBridge.Bridge;
 using CBridge.Clang;
 using CBridge.Roslyn;
-using Fclp;
-using Fclp.Internals.Extensions;
 
 namespace CBridge
 {
@@ -22,46 +20,61 @@ namespace CBridge
 
     static void Main(string[] args)
     {
-      var p = new FluentCommandLineParser<ApplicationArguments>();
-      p.Setup(arg => arg.InputHeader).As('i').Required().WithDescription("Please fill in a headerfile to bridge");
-      p.Setup(arg => arg.OutputFile).As('o').Required().WithDescription("Please fill in an output file.");
-      p.Setup(arg => arg.CDllName).As('d', "cdllname").WithDescription("Please fill in the dll name to invoke too.");
-      p.Setup(arg => arg.InvokerClassName).As('c').Required().WithDescription("Please fill in the classname of the invoker.");
-      p.Setup(arg => arg.NamespaceName).As('n').Required().WithDescription("Please fill in the last part of the namespace");
+      //var am = new ApplicationArguments
+      //{
+      //  InputHeader = @"C:\works\ewms\Main\Source\Ewms.Service.Ewms_rec\ewms_rec.h",
+      //  OutputFile = @"c:\works\ewmsrec.cs",
+      //  CDllName = "Egemin.Ewms.Service.Ewms_rec.dll",
+      //  InvokerClassName = @"RecPInvoker",
+      //  NamespaceName = "EwmsRec"
+      //};
 
-      var result = p.Parse(args);
-
-      if (!result.HasErrors)
+      var am = new ApplicationArguments
       {
-        var createIndex = ClangInvoker.createIndex(0, 0);
-        string[] arr = {"-x", "c++"};
+        InputHeader = args[0],
+        OutputFile = args[1],
+        CDllName = args[2],
+        InvokerClassName = args[3],
+        NamespaceName = args[4]
+      };
 
+      var includeDirs = new List<string>();
+      includeDirs.Add(@"C:\Program Files\LLVM\include\clang-c");
+
+      var createIndex = ClangInvoker.createIndex(0, 0);
+      string[] arr = { "-x", "c++" };
+      arr = arr.Concat(includeDirs.Select(x => "-I" + x)).ToArray();
+
+      try
+      {
         CXTranslationUnit translationUnit;
         CXUnsavedFile unsavedFile;
-        var translationUnitError = ClangInvoker.parseTranslationUnit2(createIndex, p.Object.InputHeader, arr, 3, out unsavedFile, 0, 0, out translationUnit);
-
+        var translationUnitError = ClangInvoker.parseTranslationUnit2(createIndex, am.InputHeader, arr, 3, out unsavedFile, 0, 0, out translationUnit);
         if (translationUnitError == CXErrorCode.CXError_Success)
         {
           var tree = new List<ASTFunction>();
           var functionVisitor = new FunctionVisitor(tree);
           ClangInvoker.visitChildren(ClangInvoker.getTranslationUnitCursor(translationUnit), functionVisitor.Visit, new CXClientData(IntPtr.Zero));
 
-          var roslynTranslator = new TreeTranslator(p.Object.OutputFile);
-          roslynTranslator.Invoke(tree, p.Object.InvokerClassName, p.Object.CDllName, p.Object.NamespaceName);
+          var roslynTranslator = new TreeTranslator(am.OutputFile);
+          roslynTranslator.Invoke(tree, am.InvokerClassName, am.CDllName, am.NamespaceName);
 
         }
 
         ClangInvoker.disposeTranslationUnit(translationUnit);
-        ClangInvoker.disposeIndex(createIndex);
-
-        Console.WriteLine("Translationwork is done.");
-        Console.ReadKey();
       }
-      else
+      catch (Exception ex)
       {
-        result.Errors.ForEach(i => Console.WriteLine("Option {0} is missing. {1}", i.Option.ShortName, i.Option.Description));
+        Console.WriteLine(ex.Message);
+      }
+      finally
+      {
+
+        ClangInvoker.disposeIndex(createIndex);
       }
 
+      Console.WriteLine("Translationwork is done.");
+      Console.ReadKey();
     }
   }
 }
