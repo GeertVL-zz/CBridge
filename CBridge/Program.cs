@@ -58,23 +58,19 @@ namespace CBridge
 
           var roslynTranslator = new TreeTranslator(am.OutputFile);
           roslynTranslator.Invoke(tree, am.InvokerClassName, am.CDllName, am.NamespaceName);
+          roslynTranslator.InvokeInterface(tree, am.InvokerClassName, am.NamespaceName);
 
         }
 
         ClangInvoker.disposeTranslationUnit(translationUnit);
+        ClangInvoker.disposeIndex(createIndex);
       }
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
       }
-      finally
-      {
-
-        ClangInvoker.disposeIndex(createIndex);
-      }
 
       Console.WriteLine("Translationwork is done.");
-      Console.ReadKey();
     }
   }
 }
