@@ -43,7 +43,7 @@ namespace CBridge.Roslyn
 
     public void InvokeInterface(IList<ASTFunction> clangTree, string invokerClassName, string namespaceName)
     {
-      var interfaceDeclaration = InterfaceDeclaration("I" + invokerClassName).WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword)));
+      var interfaceDeclaration = InterfaceDeclaration("I" + invokerClassName).WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)));
       interfaceDeclaration = CreateInterfaceMethods(interfaceDeclaration, clangTree);
 
       var cu = CompilationUnit()
@@ -77,8 +77,7 @@ namespace CBridge.Roslyn
     {
       foreach (var node in clangTree)
       {
-        var methodName = new CultureInfo("en-US", false).TextInfo.ToTitleCase(node.Name.Replace("_", " ")).Replace(" ", "");
-        var method = MethodDeclaration(PredefinedType(Token(TranslateType(node.ReturnType))), Identifier(methodName));
+        var method = MethodDeclaration(PredefinedType(Token(TranslateType(node.ReturnType))), Identifier(GetPublicName(node.Name)));
         method = TranslateArguments(method, node, CreateMethodParameter, null).WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
         interfaceDeclaration = interfaceDeclaration.AddMembers(method);
       }
@@ -90,14 +89,18 @@ namespace CBridge.Roslyn
     {
       foreach (var node in clangTree)
       {
-        var publicMethodName = new CultureInfo("en-US", false).TextInfo.ToTitleCase(node.Name.Replace("_", " ")).Replace(" ",  "");
-        var method = MethodDeclaration(PredefinedType(Token(TranslateType(node.ReturnType))), Identifier(publicMethodName))
+        var method = MethodDeclaration(PredefinedType(Token(TranslateType(node.ReturnType))), Identifier(GetPublicName(node.Name)))
           .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)));
         method = TranslateArguments(method, node, CreateMethodParameter, CreateMethodBody);
         classDeclaration = classDeclaration.AddMembers(method);
       }
 
       return classDeclaration;
+    }
+
+    private string GetPublicName(string name)
+    {
+      return new CultureInfo("en-US", false).TextInfo.ToTitleCase(name.Replace("cs", "").Replace("_", " ")).Replace(" ", "");
     }
 
     private ClassDeclarationSyntax CreateInvocationMethods(ClassDeclarationSyntax classDeclaration, IList<ASTFunction> clangTree, string cDllName)
