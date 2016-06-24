@@ -135,6 +135,8 @@ namespace CBridge.Roslyn
         case "char*":
         case "string":
           return SyntaxKind.StringKeyword;
+        case "double":
+          return SyntaxKind.DoubleKeyword;
         case "int":
           return SyntaxKind.IntKeyword;
         default:
@@ -151,6 +153,8 @@ namespace CBridge.Roslyn
           return "LPStr";
         case "int":
           return "I4";
+        case "double":
+          return "R8";
         default:
           return "";
       }
